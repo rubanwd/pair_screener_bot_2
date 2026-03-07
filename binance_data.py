@@ -14,6 +14,13 @@ class BinanceData:
     def __init__(self):
         self.ex = ccxt.binance({
             "enableRateLimit": True,
+            "urls": {
+                "api": {
+                    "public": "https://data-api.binance.vision/api",
+                    "fapiPublic": "https://fapi.binance.com/fapi",
+                    "fapiPrivate": "https://fapi.binance.com/fapi"
+                }
+            }
         })
         # Binance USDT-M Futures
         self.ex.options["defaultType"] = "swap"
@@ -75,6 +82,13 @@ class BinanceData:
     async def _fetch_all_async(self, symbols, timeframe, limit):
         ex_async = ccxt_async.binance({
             "enableRateLimit": True,
+            "urls": {
+                "api": {
+                    "public": "https://data-api.binance.vision/api",
+                    "fapiPublic": "https://fapi.binance.com/fapi",
+                    "fapiPrivate": "https://fapi.binance.com/fapi"
+                }
+            }
         })
         ex_async.options["defaultType"] = "swap"
         
