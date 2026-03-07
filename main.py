@@ -7,27 +7,40 @@ from binance_data import BinanceData
 from stats_arb import find_pairs
 from telegram_notify import send_telegram
 
-logging.basicConfig(level=logging.INFO)
+import sys
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
+    stream=sys.stdout
+)
+logger = logging.getLogger(__name__)
 
 binance=BinanceData()
 
 # Тестовое сообщение при запуске
 startup_msg = f"🚀 Screener Bot started (Binance)!\nMonitoring top {TOP_N_SYMBOLS} pairs.\nInterval: {SLEEP_INTERVAL // 60} mins."
-print(startup_msg)
+logger.info("Starting bot...")
+logger.info(startup_msg.replace('\n', ' '))
 send_telegram(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, startup_msg)
 
 while True:
 
     try:
-
+        logger.info("=========================================")
+        logger.info(f"Starting new iteration. Fetching top {TOP_N_SYMBOLS} symbols...")
         symbols=binance.top_symbols(TOP_N_SYMBOLS)
 
-        print(f"Fetching data for {len(symbols)} symbols...")
+        logger.info(f"Downloading OHLCV data for {len(symbols)} symbols...")
         data_map = binance.fetch_all_ohlcv(symbols, TIMEFRAME, CANDLES_LIMIT)
         
         price_map={}
         for s, df in data_map.items():
             price_map[s] = df["c"]
+            
+        logger.info(f"Successfully downloaded data for {len(price_map)} symbols.")
+        logger.info("Calculating correlations, cointegration and Z-scores...")
 
         pairs=find_pairs(
             price_map,
@@ -38,9 +51,9 @@ while True:
         )
 
         if not pairs:
-            msg="No pairs found matching strategic criteria"
-            print(msg)
+            logger.info("No pairs found matching strategic criteria.")
         else:
+            logger.info(f"Found {len(pairs)} pairs matching preliminary criteria.")
             best=pairs[0]
             
             a_sym = best[0]
@@ -50,7 +63,10 @@ while True:
             hl = best[4]
             corr = best[5]
             
+            logger.info(f"🏆 BEST PAIR: {a_sym} vs {b_sym} | Z-score: {z_score:.2f} | Corr: {corr:.2f} | HL: {hl:.2f} | P-val: {p_val:.4f}")
+            
             if abs(z_score) >= ZSCORE_THRESHOLD:
+                logger.info(f"⚡ Z-Score {z_score:.2f} is beyond threshold {ZSCORE_THRESHOLD}! Sending Telegram signal...")
                 if z_score > 0:
                     # Если спред положительный (выше среднего), значит первая монета переоценена относительно второй
                     action = f"SHORT {a_sym} | LONG {b_sym}"
@@ -69,14 +85,12 @@ correlation: {corr:.2f}
 pvalue: {p_val:.4f}
 halflife: {hl:.2f}
 """
-                print(msg)
                 send_telegram(TELEGRAM_BOT_TOKEN,TELEGRAM_CHAT_ID,msg)
             else:
-                msg=f"Best pair {a_sym} vs {b_sym} has Z-score {z_score:.2f} (Needs >= {ZSCORE_THRESHOLD}). No signal sent."
-                print(msg)
+                logger.info(f"💤 Threshold not reached (Needs >= {ZSCORE_THRESHOLD}). No signal sent.")
 
     except Exception as e:
-        print("ERROR",e)
+        logger.error(f"ERROR during iteration: {e}", exc_info=True)
 
-    print(f"Sleeping for {SLEEP_INTERVAL // 60} minutes...")
+    logger.info(f"Sleeping for {SLEEP_INTERVAL // 60} minutes...\n")
     time.sleep(SLEEP_INTERVAL)

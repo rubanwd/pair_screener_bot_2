@@ -70,9 +70,10 @@ class BinanceData:
                 df = pd.DataFrame(data, columns=["ts", "o", "h", "l", "c", "v"])
                 return symbol, df
             except asyncio.TimeoutError:
-                print(f"Timeout fetching {symbol}")
+                print(f"Timeout fetching {symbol}, retrying ({i+1}/{retries})...")
                 await asyncio.sleep(2 ** (i + 1))
             except ccxt.RateLimitExceeded:
+                print(f"RateLimitExceeded for {symbol}, waiting...")
                 await asyncio.sleep(2 ** (i + 1))
             except Exception as e:
                 print(f"Error fetching {symbol}: {e}")
