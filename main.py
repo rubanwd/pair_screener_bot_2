@@ -3,16 +3,16 @@ import time
 import logging
 
 from config import *
-from bybit_data import BybitData
+from binance_data import BinanceData
 from stats_arb import find_pairs
 from telegram_notify import send_telegram
 
 logging.basicConfig(level=logging.INFO)
 
-bybit=BybitData()
+binance=BinanceData()
 
 # Тестовое сообщение при запуске
-startup_msg = f"🚀 Screener Bot started!\nMonitoring top {TOP_N_SYMBOLS} pairs.\nInterval: {SLEEP_INTERVAL // 60} mins."
+startup_msg = f"🚀 Screener Bot started (Binance)!\nMonitoring top {TOP_N_SYMBOLS} pairs.\nInterval: {SLEEP_INTERVAL // 60} mins."
 print(startup_msg)
 send_telegram(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, startup_msg)
 
@@ -20,10 +20,10 @@ while True:
 
     try:
 
-        symbols=bybit.top_symbols(TOP_N_SYMBOLS)
+        symbols=binance.top_symbols(TOP_N_SYMBOLS)
 
         print(f"Fetching data for {len(symbols)} symbols...")
-        data_map = bybit.fetch_all_ohlcv(symbols, TIMEFRAME, CANDLES_LIMIT)
+        data_map = binance.fetch_all_ohlcv(symbols, TIMEFRAME, CANDLES_LIMIT)
         
         price_map={}
         for s, df in data_map.items():
