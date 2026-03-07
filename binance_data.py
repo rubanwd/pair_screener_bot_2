@@ -17,8 +17,6 @@ class BinanceData:
             "urls": {
                 "api": {
                     "public": "https://data-api.binance.vision/api/v3",
-                    "fapiPublic": "https://fapi.binance.com/fapi/v1",
-                    "fapiPrivate": "https://fapi.binance.com/fapi/v1"
                 }
             }
         })
@@ -86,8 +84,6 @@ class BinanceData:
             "urls": {
                 "api": {
                     "public": "https://data-api.binance.vision/api/v3",
-                    "fapiPublic": "https://fapi.binance.com/fapi/v1",
-                    "fapiPrivate": "https://fapi.binance.com/fapi/v1"
                 }
             }
         })
