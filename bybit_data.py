@@ -12,7 +12,14 @@ if sys.platform == 'win32':
 class BybitData:
 
     def __init__(self):
-        self.ex = ccxt.bybit({"enableRateLimit": True})
+        # Добавляем заголовки, чтобы Bybit не блокировал запросы из облака
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        }
+        self.ex = ccxt.bybit({
+            "enableRateLimit": True,
+            "headers": headers
+        })
         self.ex.options["defaultType"]="swap"
 
     def load_markets(self):
@@ -69,7 +76,13 @@ class BybitData:
 
     async def _fetch_all_async(self, symbols, timeframe, limit):
         # Используем асинхронный клиент для скорости
-        ex_async = ccxt_async.bybit({"enableRateLimit": True})
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        }
+        ex_async = ccxt_async.bybit({
+            "enableRateLimit": True,
+            "headers": headers
+        })
         ex_async.options["defaultType"] = "swap"
         
         # Ограничиваем количество одновременных запросов (семафор)
