@@ -11,6 +11,11 @@ logging.basicConfig(level=logging.INFO)
 
 bybit=BybitData()
 
+# Тестовое сообщение при запуске
+startup_msg = f"🚀 Screener Bot started!\nMonitoring top {TOP_N_SYMBOLS} pairs.\nInterval: {SLEEP_INTERVAL // 60} mins."
+print(startup_msg)
+send_telegram(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, startup_msg)
+
 while True:
 
     try:
