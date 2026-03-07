@@ -15,6 +15,9 @@ class BybitData:
         # Добавляем заголовки, чтобы Bybit не блокировал запросы из облака
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'application/json',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Connection': 'keep-alive'
         }
         self.ex = ccxt.bybit({
             "enableRateLimit": True,
@@ -78,6 +81,9 @@ class BybitData:
         # Используем асинхронный клиент для скорости
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'application/json',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Connection': 'keep-alive'
         }
         ex_async = ccxt_async.bybit({
             "enableRateLimit": True,
