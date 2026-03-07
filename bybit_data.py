@@ -22,11 +22,9 @@ class BybitData:
         self.ex = ccxt.bybit({
             "enableRateLimit": True,
             "headers": headers,
-            "urls": {
-                "api": {
-                    "public": "https://api.bytick.com", # Альтернативный домен Bybit (Bytick) для обхода банов Cloudflare
-                    "private": "https://api.bytick.com"
-                }
+            "proxies": {
+                "http": "http://18.198.15.226:8080",
+                "https": "http://18.198.15.226:8080"
             }
         })
         self.ex.options["defaultType"]="swap"
@@ -96,15 +94,12 @@ class BybitData:
             'Connection': 'keep-alive'
         }
         
-        # Обход блокировок через использование альтернативного базового URL Bybit, если нужно
+        # Используем бесплатный прокси для обхода блокировок Cloudflare на дата-центрах
         ex_async = ccxt_async.bybit({
             "enableRateLimit": True,
-            "headers": headers,
-            "urls": {
-                "api": {
-                    "public": "https://api.bytick.com", # Альтернативный домен Bybit (Bytick) для обхода банов Cloudflare
-                    "private": "https://api.bytick.com"
-                }
+            "proxies": {
+                "http": "http://18.198.15.226:8080", # Публичный прокси, часто меняются, но попробуем
+                "https": "http://18.198.15.226:8080"
             }
         })
         ex_async.options["defaultType"] = "swap"
