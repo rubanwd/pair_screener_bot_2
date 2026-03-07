@@ -2,6 +2,7 @@ services:
   - type: worker
     name: crypto-pair-screener
     env: python
+    region: frankfurt # Меняем регион на Европу (Франкфурт), так как США часто блокируется Binance
     buildCommand: pip install -r requirements.txt
     startCommand: python -u main.py
     envVars:
