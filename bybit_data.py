@@ -100,7 +100,6 @@ class BybitData:
         ex_async = ccxt_async.bybit({
             "enableRateLimit": True,
             "headers": headers,
-            "hostname": "api.bybit.com", # Явно задаем хост
             "urls": {
                 "api": {
                     "public": "https://api.bytick.com", # Альтернативный домен Bybit (Bytick) для обхода банов Cloudflare
