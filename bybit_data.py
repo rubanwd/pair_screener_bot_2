@@ -1,7 +1,13 @@
-
 import ccxt
+import ccxt.async_support as ccxt_async
+import asyncio
 import pandas as pd
 import time
+import sys
+
+# Фикс для Windows и aiodns
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 class BybitData:
 
@@ -47,3 +53,42 @@ class BybitData:
         
         # Возвращаем пустой DataFrame, если ничего не получилось скачать
         return pd.DataFrame(columns=["ts","o","h","l","c","v"])
+
+    async def _fetch_single_async(self, ex_async, symbol, timeframe, limit, retries=5):
+        for i in range(retries):
+            try:
+                data = await ex_async.fetch_ohlcv(symbol, timeframe=timeframe, limit=limit)
+                df = pd.DataFrame(data, columns=["ts", "o", "h", "l", "c", "v"])
+                return symbol, df
+            except ccxt.RateLimitExceeded:
+                await asyncio.sleep(2 ** (i + 1))
+            except Exception as e:
+                print(f"Error fetching {symbol}: {e}")
+                await asyncio.sleep(2)
+        return symbol, pd.DataFrame(columns=["ts", "o", "h", "l", "c", "v"])
+
+    async def _fetch_all_async(self, symbols, timeframe, limit):
+        # Используем асинхронный клиент для скорости
+        ex_async = ccxt_async.bybit({"enableRateLimit": True})
+        ex_async.options["defaultType"] = "swap"
+        
+        # Ограничиваем количество одновременных запросов (семафор)
+        sem = asyncio.Semaphore(15)
+        
+        async def fetch_with_sem(symbol):
+            async with sem:
+                return await self._fetch_single_async(ex_async, symbol, timeframe, limit)
+        
+        tasks = [fetch_with_sem(s) for s in symbols]
+        results = await asyncio.gather(*tasks)
+        
+        await ex_async.close()
+        return results
+
+    def fetch_all_ohlcv(self, symbols, timeframe, limit):
+        """
+        Скачивает исторические данные для всех переданных тикеров асинхронно в разы быстрее.
+        Возвращает словарь {symbol: DataFrame}
+        """
+        results = asyncio.run(self._fetch_all_async(symbols, timeframe, limit))
+        return {sym: df for sym, df in results if not df.empty}
