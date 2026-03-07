@@ -21,7 +21,13 @@ class BybitData:
         }
         self.ex = ccxt.bybit({
             "enableRateLimit": True,
-            "headers": headers
+            "headers": headers,
+            "urls": {
+                "api": {
+                    "public": "https://api.bytick.com", # Альтернативный домен Bybit (Bytick) для обхода банов Cloudflare
+                    "private": "https://api.bytick.com"
+                }
+            }
         })
         self.ex.options["defaultType"]="swap"
 
@@ -67,9 +73,13 @@ class BybitData:
     async def _fetch_single_async(self, ex_async, symbol, timeframe, limit, retries=5):
         for i in range(retries):
             try:
-                data = await ex_async.fetch_ohlcv(symbol, timeframe=timeframe, limit=limit)
+                # CCXT внутри asyncio может иногда "давиться" блокировками, добавляем небольшой таймаут
+                data = await asyncio.wait_for(ex_async.fetch_ohlcv(symbol, timeframe=timeframe, limit=limit), timeout=10.0)
                 df = pd.DataFrame(data, columns=["ts", "o", "h", "l", "c", "v"])
                 return symbol, df
+            except asyncio.TimeoutError:
+                print(f"Timeout fetching {symbol}")
+                await asyncio.sleep(2 ** (i + 1))
             except ccxt.RateLimitExceeded:
                 await asyncio.sleep(2 ** (i + 1))
             except Exception as e:
@@ -85,9 +95,18 @@ class BybitData:
             'Accept-Encoding': 'gzip, deflate, br',
             'Connection': 'keep-alive'
         }
+        
+        # Обход блокировок через использование альтернативного базового URL Bybit, если нужно
         ex_async = ccxt_async.bybit({
             "enableRateLimit": True,
-            "headers": headers
+            "headers": headers,
+            "hostname": "api.bybit.com", # Явно задаем хост
+            "urls": {
+                "api": {
+                    "public": "https://api.bytick.com", # Альтернативный домен Bybit (Bytick) для обхода банов Cloudflare
+                    "private": "https://api.bytick.com"
+                }
+            }
         })
         ex_async.options["defaultType"] = "swap"
         
