@@ -42,8 +42,12 @@ class BinanceData:
             
             valid_symbols = set()
             for s in info_data['symbols']:
-                if s['status'] == 'TRADING' and s['quoteAsset'] == 'USDT' and s['contractType'] == 'PERPETUAL':
-                    valid_symbols.add(s['symbol'])
+                # В Binance Vision структура может немного отличаться, поэтому используем .get()
+                if s.get('status') == 'TRADING' and s.get('quoteAsset') == 'USDT':
+                    # Binance Vision отдает спот, а fapi - фьючерсы. 
+                    # Если contractType нет, значит это спот-рынок.
+                    if s.get('contractType') == 'PERPETUAL' or 'contractType' not in s:
+                        valid_symbols.add(s['symbol'])
 
             # 2. Получаем объемы торгов за 24 часа
             ticker_resp = requests.get("https://fapi.binance.com/fapi/v1/ticker/24hr", proxies=proxies, timeout=10)
