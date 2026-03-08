@@ -18,9 +18,9 @@ class BinanceData:
         # Основной API для фьючерсов Binance
         self.base_url = "https://fapi.binance.com"
         
-        # Включаем бесплатный прокси, чтобы обойти ошибку 451 на Render
-        # Используем другой прокси, так как предыдущий отвалился по таймауту
-        self.proxy = "http://167.172.109.12:8080"
+        # Отключаем прокси, так как бесплатные прокси слишком нестабильны
+        # Вместо этого будем использовать альтернативный домен Binance
+        self.proxy = None
 
     def top_symbols(self, top_n):
         """
@@ -32,7 +32,11 @@ class BinanceData:
             proxies = {"http": self.proxy, "https": self.proxy} if self.proxy else None
             
             # 1. Получаем список всех фьючерсов
-            info_resp = requests.get(f"{self.base_url}/fapi/v1/exchangeInfo", proxies=proxies, timeout=10)
+            # Используем альтернативный публичный домен Binance Vision, который не блокирует США/Европу
+            info_resp = requests.get("https://fapi.binance.com/fapi/v1/exchangeInfo", proxies=proxies, timeout=10)
+            if info_resp.status_code == 451:
+                logger.warning("Main endpoint returned 451, trying alternative endpoint...")
+                info_resp = requests.get("https://data-api.binance.vision/api/v3/exchangeInfo", proxies=proxies, timeout=10)
             info_resp.raise_for_status()
             info_data = info_resp.json()
             
@@ -42,7 +46,9 @@ class BinanceData:
                     valid_symbols.add(s['symbol'])
 
             # 2. Получаем объемы торгов за 24 часа
-            ticker_resp = requests.get(f"{self.base_url}/fapi/v1/ticker/24hr", proxies=proxies, timeout=10)
+            ticker_resp = requests.get("https://fapi.binance.com/fapi/v1/ticker/24hr", proxies=proxies, timeout=10)
+            if ticker_resp.status_code == 451:
+                ticker_resp = requests.get("https://data-api.binance.vision/api/v3/ticker/24hr", proxies=proxies, timeout=10)
             ticker_resp.raise_for_status()
             ticker_data = ticker_resp.json()
 
@@ -65,6 +71,8 @@ class BinanceData:
 
     async def _fetch_single_async(self, session, symbol, timeframe, limit, retries=5):
         url = f"{self.base_url}/fapi/v1/klines"
+        alt_url = "https://data-api.binance.vision/api/v3/klines"
+        
         params = {
             "symbol": symbol,
             "interval": timeframe,
@@ -74,14 +82,20 @@ class BinanceData:
         for i in range(retries):
             try:
                 async with session.get(url, params=params, proxy=self.proxy, timeout=10.0) as response:
-                    # Обработка лимитов Binance
-                    if response.status in [429, 418]:
-                        logger.warning(f"Rate limit hit for {symbol}, waiting...")
-                        await asyncio.sleep(2 ** (i + 1))
-                        continue
-                        
-                    response.raise_for_status()
-                    data = await response.json()
+                    if response.status == 451:
+                        # Если словили бан, переключаемся на альтернативный домен
+                        async with session.get(alt_url, params=params, proxy=self.proxy, timeout=10.0) as alt_response:
+                            alt_response.raise_for_status()
+                            data = await alt_response.json()
+                    else:
+                        # Обработка лимитов Binance
+                        if response.status in [429, 418]:
+                            logger.warning(f"Rate limit hit for {symbol}, waiting...")
+                            await asyncio.sleep(2 ** (i + 1))
+                            continue
+                            
+                        response.raise_for_status()
+                        data = await response.json()
                     
                     # Формат свечи Binance:
                     # [0: open_time, 1: open, 2: high, 3: low, 4: close, 5: volume, ...]
