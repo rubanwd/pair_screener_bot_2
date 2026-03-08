@@ -18,9 +18,8 @@ class BinanceData:
         # Основной API для фьючерсов Binance
         self.base_url = "https://fapi.binance.com"
         
-        # Если Render снова выдаст ошибку 451, можно будет раскомментировать эту строку
-        # и передавать proxy в запросы (в requests и aiohttp)
-        self.proxy = None # "http://18.198.15.226:8080"
+        # Включаем бесплатный прокси, чтобы обойти ошибку 451 на Render
+        self.proxy = "http://18.198.15.226:8080"
 
     def top_symbols(self, top_n):
         """
