@@ -19,7 +19,8 @@ class BinanceData:
         self.base_url = "https://fapi.binance.com"
         
         # Включаем бесплатный прокси, чтобы обойти ошибку 451 на Render
-        self.proxy = "http://18.198.15.226:8080"
+        # Используем другой прокси, так как предыдущий отвалился по таймауту
+        self.proxy = "http://167.172.109.12:8080"
 
     def top_symbols(self, top_n):
         """
